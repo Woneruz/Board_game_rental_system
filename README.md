@@ -125,15 +125,24 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Wyświetlenie listy gier wraz z wydawcą oraz liczbą dostępnych sztuk w magazynie.
 **Kod SQL:**
 
-    SELECT 
-        g.title AS "Tytuł",
-        p.name AS "Wydawca",
-        count(CASE WHEN c.status = 'DOSTĘPNY' THEN 1 END) AS "Dostępne sztuki"
+    BEGIN;
+    -- WYPOŻYCZENIE ZE SCENARIUSZA 1 - wpływ na dostępność koppii gry
+    -- standardowo istnieją 3 kopie gry o game.id = 1, teraz dostępnych są dwie
+    -- SELECT create_loan(1, 49, 7);
+    
+    SELECT
+        g.title AS "Tytuł Gry",
+        p.name  AS "Wydawca",
+        g.id,
+        COUNT(c.id) AS "Sztuk łącznie",
+        COUNT(*) FILTER (WHERE c.status = 'DOSTĘPNY') AS "Dostępne teraz"
     FROM games g
-    JOIN publishers p ON g.publisher_id = p.id
-    LEFT JOIN copies c ON g.id = c.game_id
-    GROUP BY g.title, p.name
-    ORDER BY "Dostępne sztuki" DESC;
+    JOIN publishers p ON p.id = g.publisher_id
+    LEFT JOIN copies c ON c.game_id = g.id
+    GROUP BY g.id, g.title, p.name
+    ORDER BY g.title;
+    
+    ROLLBACK;
 
 **Wynik:** Poprawnie wygenerowany raport magazynowy.
 ![Wynik Testu 3](assets/wynik3.png)
