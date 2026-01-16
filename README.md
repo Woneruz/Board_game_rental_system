@@ -78,7 +78,7 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
     SELECT * FROM payments WHERE type = 'kara' ORDER BY id DESC LIMIT 1;
 
 **Wynik:** System automatycznie dodał rekord do tabeli płatności z kwotą 25.00 PLN (5 dni * 5.00 PLN).
-![Wynik Testu 2](Wynik2.png)
+![Wynik Testu 2](assets/wynik2.png)
 
 ### Scenariusz 3: Raport dostępności gier (Advanced SQL)
 **Cel:** Weryfikacja poprawności złączeń (`JOIN`) i agregacji danych (`GROUP BY`).
@@ -96,6 +96,6 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
     ORDER BY "Dostępne sztuki" DESC;
 
 **Wynik:** Poprawnie wygenerowany raport magazynowy.
-![Wynik Testu 3](Wynik3.png)
+![Wynik Testu 3](assets/wynik3.png)
 
 ---
