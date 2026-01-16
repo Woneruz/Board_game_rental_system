@@ -63,7 +63,10 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Próba wypożyczenia egzemplarza, który posiada status aktywnego wypożyczenia (nie został zwrócony).
 **Kod SQL:**
 
-    SELECT create_loan(2, 1, 3); -- Klient 2 próbuje wypożyczyć zajęty egzemplarz nr 1
+    BEGIN;
+    SELECT create_loan(1, 49, 7);
+    SELECT create_loan(2, 49, 3);
+    ROLLBACK;
 
 **Wynik:** System zwraca błąd, operacja zostaje zablokowana przez trigger.
 ![Wynik Testu 1](assets/wynik1.png)
@@ -73,12 +76,40 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Symulacja zwrotu gry 5 dni po terminie.
 **Kod SQL:**
 
-    -- Symulacja opóźnienia (zmiana daty due_date wstecz)
-    UPDATE loans SET due_date = CURRENT_DATE - 5 WHERE id = [ID_WYPOZYCZENIA];
-    -- Dokonanie zwrotu
-    UPDATE loans SET return_date = CURRENT_DATE WHERE id = [ID_WYPOZYCZENIA];
-    -- Sprawdzenie czy naliczono karę
-    SELECT * FROM payments WHERE type = 'kara' ORDER BY id DESC LIMIT 1;
+    BEGIN;
+    
+    SELECT create_loan(3, 51, 2) AS loan_id;
+    
+    SELECT id, client_id, copy_id, loan_date, due_date, return_date
+    FROM loans
+    WHERE copy_id = 51 AND client_id = 3
+    ORDER BY id DESC
+    LIMIT 1;
+    
+    UPDATE loans
+    SET due_date = CURRENT_DATE - 5
+    WHERE id = (
+      SELECT id FROM loans
+      WHERE copy_id = 51 AND client_id = 3
+      ORDER BY id DESC
+      LIMIT 1
+    );
+    UPDATE loans
+    SET return_date = CURRENT_DATE
+    WHERE id = (
+      SELECT id FROM loans
+      WHERE copy_id = 51 AND client_id = 3
+      ORDER BY id DESC
+      LIMIT 1
+    );
+
+    SELECT p.*
+    FROM payments p
+    JOIN loans l ON l.id = p.loan_id
+    WHERE l.copy_id = 51 AND l.client_id = 3
+    ORDER BY p.id DESC;
+
+    ROLLBACK;
 
 **Wynik:** System automatycznie dodał rekord do tabeli płatności z kwotą 25.00 PLN (5 dni * 5.00 PLN).
 ![Wynik Testu 2](assets/wynik2.png)
