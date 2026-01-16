@@ -1,6 +1,7 @@
 # System Bazy Danych Wypożyczalni Gier Planszowych 🎲
 
-**Projekt zaliczeniowy z przedmiotu:** Bazy Danych (Teleinformatyka AGH)   
+**Projekt zaliczeniowy z przedmiotu:** Bazy Danych (Teleinformatyka AGH)
+
 **Autorzy:** Arkadiusz Baran, Maciej Miłek
 ---
 
