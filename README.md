@@ -22,7 +22,7 @@ Projekt realizuje wymagania na ocenę 4.0 poprzez zastosowanie rozbudowanej stru
 Baza składa się z **9 tabel** powiązanych relacjami, co zapewnia zgodność z zasadami normalizacji (3NF).
 
 ### Schemat ERD (Entity Relationship Diagram)
-![Diagram ERD](assets/erd_diagram.png)
+![Diagram ERD](assets/Erd_diagram.png)
 
 ### Lista Tabel
 | Tabela | Opis |
