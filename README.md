@@ -1,9 +1,29 @@
 # System Bazy Danych Wypożyczalni Gier Planszowych 🎲
 
-**Projekt zaliczeniowy z przedmiotu:** Bazy Danych (Teleinformatyka AGH)
-
+**Projekt:** Relacyjna baza danych (PostgreSQL) dla wypożyczalni gier planszowych 
 **Autorzy:** Arkadiusz Baran, Maciej Miłek
 
+---
+
+## 0. Jak uruchomić projekt (Quick Start)
+
+**Wymagania:**
+- PostgreSQL (np. 14+)
+- `psql`
+
+### Import bazy danych
+
+```bash
+createdb board_game_rental_system
+psql -d board_game_rental_system -f database.sql
+```
+
+### Szybkie sprawdzenie działania
+
+```sql
+SELECT COUNT(*) FROM games;
+SELECT * FROM vw_game_availability ORDER BY title;
+```
 
 ---
 
@@ -14,12 +34,12 @@ System służy do kompleksowej obsługi wypożyczalni gier planszowych. Baza dan
 - Automatyzację procesów finansowych (naliczanie kaucji oraz kar za opóźnienia).
 - Raportowanie dostępności gier w czasie rzeczywistym.
 
-Projekt realizuje wymagania na ocenę 4.0 poprzez zastosowanie rozbudowanej struktury tabel (9 encji), widoków oraz logiki biznesowej po stronie serwera (triggery i funkcje).
+Projekt prezentuje projekt relacyjnej bazy danych dla wypożyczalni gier, wraz z logiką biznesową po stronie PostgreSQL (widoki, triggery, funkcje) i scenariuszami testowymi.
 
 ---
 
 ## 2. Struktura Bazy Danych
-Baza składa się z **9 tabel** powiązanych relacjami, co zapewnia zgodność z zasadami normalizacji (3NF).
+Baza składa się z **9 tabel** powiązanych relacjami, co zapewnia zgodność z zasadami normalizacji (**3NF**).
 
 ### Schemat ERD (Entity Relationship Diagram)
 ![Diagram ERD](assets/Erd_diagram.png)
@@ -63,10 +83,12 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Próba wypożyczenia egzemplarza, który posiada status aktywnego wypożyczenia (nie został zwrócony).
 **Kod SQL:**
 
-    BEGIN;
-    SELECT create_loan(1, 49, 7);
-    SELECT create_loan(2, 49, 3);
-    ROLLBACK;
+```sql
+BEGIN;
+-- copy_id = 49 ma aktywne wypożyczenie w danych startowych -> operacja ma się nie powieść (oczekiwane)
+SELECT create_loan(2, 49, 3);
+ROLLBACK;
+```
 
 **Wynik:** System zwraca błąd, operacja zostaje zablokowana przez trigger.
 ![Wynik Testu 1](assets/wynik1.png)
@@ -78,40 +100,42 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Symulacja zwrotu gry 5 dni po terminie.
 **Kod SQL:**
 
-    BEGIN;
+```sql
+BEGIN;
     
-    SELECT create_loan(3, 51, 2) AS loan_id;
+SELECT create_loan(3, 51, 2) AS loan_id;
     
-    SELECT id, client_id, copy_id, loan_date, due_date, return_date
-    FROM loans
+SELECT id, client_id, copy_id, loan_date, due_date, return_date
+FROM loans
+WHERE copy_id = 51 AND client_id = 3
+ORDER BY id DESC
+LIMIT 1;
+    
+UPDATE loans
+SET due_date = CURRENT_DATE - 5
+WHERE id = (
+    SELECT id FROM loans
     WHERE copy_id = 51 AND client_id = 3
     ORDER BY id DESC
-    LIMIT 1;
-    
-    UPDATE loans
-    SET due_date = CURRENT_DATE - 5
-    WHERE id = (
-      SELECT id FROM loans
-      WHERE copy_id = 51 AND client_id = 3
-      ORDER BY id DESC
-      LIMIT 1
-    );
-    UPDATE loans
-    SET return_date = CURRENT_DATE
-    WHERE id = (
-      SELECT id FROM loans
-      WHERE copy_id = 51 AND client_id = 3
-      ORDER BY id DESC
-      LIMIT 1
-    );
+    LIMIT 1
+);
+UPDATE loans
+SET return_date = CURRENT_DATE
+WHERE id = (
+    SELECT id FROM loans
+    WHERE copy_id = 51 AND client_id = 3
+    ORDER BY id DESC
+    LIMIT 1
+);
 
-    SELECT p.*
-    FROM payments p
-    JOIN loans l ON l.id = p.loan_id
-    WHERE l.copy_id = 51 AND l.client_id = 3
-    ORDER BY p.id DESC;
+SELECT p.*
+FROM payments p
+JOIN loans l ON l.id = p.loan_id
+WHERE l.copy_id = 51 AND l.client_id = 3
+ORDER BY p.id DESC;
 
-    ROLLBACK;
+ROLLBACK;
+```
 
 **Wynik:** System automatycznie dodał rekord do tabeli płatności z kwotą 25.00 PLN (5 dni * 5.00 PLN).
 
@@ -125,26 +149,87 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Działanie:** Wyświetlenie listy gier wraz z wydawcą oraz liczbą dostępnych sztuk w magazynie.
 **Kod SQL:**
 
-    BEGIN;
-    -- WYPOŻYCZENIE ZE SCENARIUSZA 1 - wpływ na dostępność koppii gry
-    -- standardowo istnieją 3 kopie gry o game.id = 1, teraz dostępnych są dwie
-    -- SELECT create_loan(1, 49, 7);
+```sql
+BEGIN;
+-- WYPOŻYCZENIE ZE SCENARIUSZA 1 - wpływ na dostępność kopii gry
+-- standardowo istnieją 3 kopie gry o game.id = 1, teraz dostępne są dwie
+-- SELECT create_loan(1, 49, 7);
     
-    SELECT
-        g.title AS "Tytuł Gry",
-        p.name  AS "Wydawca",
-        g.id,
-        COUNT(c.id) AS "Sztuk łącznie",
-        COUNT(*) FILTER (WHERE c.status = 'DOSTĘPNY') AS "Dostępne teraz"
-    FROM games g
-    JOIN publishers p ON p.id = g.publisher_id
-    LEFT JOIN copies c ON c.game_id = g.id
-    GROUP BY g.id, g.title, p.name
-    ORDER BY g.title;
+SELECT
+    g.title AS "Tytuł Gry",
+    p.name  AS "Wydawca",
+    g.id,
+    COUNT(c.id) AS "Sztuk łącznie",
+    COUNT(*) FILTER (WHERE c.status = 'DOSTĘPNY') AS "Dostępne teraz"
+FROM games g
+JOIN publishers p ON p.id = g.publisher_id
+LEFT JOIN copies c ON c.game_id = g.id
+GROUP BY g.id, g.title, p.name
+ORDER BY g.title;
     
-    ROLLBACK;
+ROLLBACK;
+```
 
 **Wynik:** Poprawnie wygenerowany raport magazynowy.
 ![Wynik Testu 3](assets/wynik3.png)
 
 ---
+
+### Scenariusz 4: Kategorie gier (relacja M:N)
+**Cel:** Weryfikacja poprawności relacji games ↔ categories przez tabelę game_categories.
+**Działanie:** każda gra ma przypisane 1–2 kategorie, wynik potwierdza działanie relacji M:N.
+**Kod SQL:**
+
+```sql
+SELECT g.title,
+    string_agg(c.name, ', ' ORDER BY c.name) AS categories
+FROM games g
+JOIN game_categories gc ON gc.game_id = g.id
+JOIN categories c ON c.id = gc.category_id
+GROUP BY g.id, g.title
+ORDER BY g.title;
+```
+
+**Wynik:** Poprawnie wygenerowany raport kategorii.
+![Wynik Testu 4](assets/wynik4.png)
+
+---
+
+## 5. Obiekty bazy danych
+
+### Widoki
+- `vw_game_availability` – raport dostępności gier (tytuł, wydawca, liczba kopii, liczba dostępnych kopii).
+- `vw_overdue_loans` – lista wypożyczeń po terminie (przydatne do obsługi opóźnień).
+
+### Funkcje
+- `create_loan(client_id, copy_id, days)` – tworzy wypożyczenie, wylicza `due_date`, oraz (jeśli wymagane) rejestruje kaucję w `payments`.
+
+### Triggery
+- `prevent_duplicate_loan` – blokuje wypożyczenie kopii, która ma już aktywne wypożyczenie (brak `return_date`).
+- `apply_overdue_fine` – przy zwrocie po terminie dodaje karę do tabeli `payments`.
+
+---
+
+## 6. Najważniejsze funkcje (Features)
+
+- Zarządzanie katalogiem gier i egzemplarzy (status dostępności, stan techniczny).
+- Obsługa wypożyczeń z walidacją reguł biznesowych (blokada podwójnego wypożyczenia).
+- Automatyczne rozliczenia: kaucje oraz kary za opóźnienia.
+- Raportowanie dostępności gier (agregacje i widoki).
+- Relacja wiele-do-wielu gry–kategorie (system tagowania gier).
+
+
+---
+
+## 7. Database Highlights
+
+- **Relacje i integralność danych:** PK/FK, ograniczenia oraz spójny model relacyjny.
+- **Logika po stronie bazy:** triggery oraz funkcje dla kluczowych procesów.
+- **Widoki:** gotowe raporty do szybkiego podglądu dostępności i opóźnień.
+- **Zaawansowane SQL:** JOIN, GROUP BY, agregacje, `FILTER`, `string_agg`.
+
+---
+
+## 8. Testowanie
+
+W folderze `assets/` znajdują się zrzuty ekranu potwierdzające scenariusze testowe (blokada wypożyczenia zajętej kopii, naliczanie kary, raporty dostępności oraz kategorie M:N).
