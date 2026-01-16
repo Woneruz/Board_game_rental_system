@@ -3,6 +3,8 @@
 **Projekt zaliczeniowy z przedmiotu:** Bazy Danych (Teleinformatyka AGH)
 
 **Autorzy:** Arkadiusz Baran, Maciej Miłek
+
+
 ---
 
 ## 1. Opis Projektu
