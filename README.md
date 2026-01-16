@@ -71,6 +71,8 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
 **Wynik:** System zwraca błąd, operacja zostaje zablokowana przez trigger.
 ![Wynik Testu 1](assets/wynik1.png)
 
+---
+
 ### Scenariusz 2: Zwrot po terminie i automatyczne naliczenie kary
 **Cel:** Weryfikacja triggera `apply_overdue_fine`.
 **Działanie:** Symulacja zwrotu gry 5 dni po terminie.
@@ -112,7 +114,11 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
     ROLLBACK;
 
 **Wynik:** System automatycznie dodał rekord do tabeli płatności z kwotą 25.00 PLN (5 dni * 5.00 PLN).
-![Wynik Testu 2](assets/wynik2.png)
+
+![Pierwszy zrzut](assets/wynik2a.png)
+![Drugi zrzut](assets/wynik2b.png)
+
+---
 
 ### Scenariusz 3: Raport dostępności gier (Advanced SQL)
 **Cel:** Weryfikacja poprawności złączeń (`JOIN`) i agregacji danych (`GROUP BY`).
