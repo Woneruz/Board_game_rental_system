@@ -19,7 +19,7 @@ Projekt realizuje wymagania na ocenę 4.0 poprzez zastosowanie rozbudowanej stru
 Baza składa się z **9 tabel** powiązanych relacjami, co zapewnia zgodność z zasadami normalizacji (3NF).
 
 ### Schemat ERD (Entity Relationship Diagram)
-![Diagram ERD](Diagram.png)
+![Diagram ERD](assets/erd_diagram.png)
 
 ### Lista Tabel
 | Tabela | Opis |
@@ -63,7 +63,7 @@ Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełni
     SELECT create_loan(2, 1, 3); -- Klient 2 próbuje wypożyczyć zajęty egzemplarz nr 1
 
 **Wynik:** System zwraca błąd, operacja zostaje zablokowana przez trigger.
-![Wynik Testu 1](Wynik1.png)
+![Wynik Testu 1](assets/wynik1.png)
 
 ### Scenariusz 2: Zwrot po terminie i automatyczne naliczenie kary
 **Cel:** Weryfikacja triggera `apply_overdue_fine`.
