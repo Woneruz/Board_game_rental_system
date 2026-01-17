@@ -26,10 +26,11 @@ psql -d board_game_rental_system -v ON_ERROR_STOP=1 -f migrations/002_seed.sql
 
 ```bash
 createdb board_game_rental_system
-psql -d board_game_rental_system -f database.sql
+psql -d board_game_rental_system -v ON_ERROR_STOP=1 -f database.sql
 ```
 *Uwaga: database.sql może zawierać polecenia typu ALTER ... OWNER TO ... (dump z serwera).
 Jeśli import na innym koncie PostgreSQL zgłasza błąd braku roli/owner’a, użyj wariantu z migrations/.*
+
 
 
 ### Szybkie sprawdzenie działania
@@ -78,13 +79,16 @@ Baza składa się z **9 tabel** powiązanych relacjami, co zapewnia zgodność z
 W systemie zaimplementowano mechanizmy automatyzujące logikę biznesową (Business Logic) bezpośrednio w bazie danych.
 
 ### A. Blokada podwójnego wypożyczenia (Trigger)
-Trigger `prevent_duplicate_loan` zapobiega sytuacji, w której jeden egzemplarz gry jest wypożyczany dwóm klientom jednocześnie. Jeśli egzemplarz nie został zwrócony, system blokuje nową transakcję, zgłaszając wyjątek.
+Trigger: `trg_prevent_duplicate_loan` (funkcja: `prevent_duplicate_loan()`) zapobiega sytuacji, w której jeden egzemplarz gry jest wypożyczany dwóm klientom jednocześnie. Jeśli egzemplarz nie został zwrócony, system blokuje nową transakcję, zgłaszając wyjątek.
 
 ### B. Automatyczne naliczanie kar (Trigger)
-Trigger `apply_overdue_fine` uruchamia się automatycznie przy zwrocie gry. System porównuje datę zwrotu z terminem (`due_date`). Jeśli termin został przekroczony, system wylicza karę (stawka dzienna * liczba dni) i dodaje odpowiedni wpis do tabeli `payments`.
+Trigger: `trg_apply_overdue_fine` (`funkcja: apply_overdue_fine()`) uruchamia się automatycznie przy zwrocie gry. System porównuje datę zwrotu z terminem (`due_date`). Jeśli termin został przekroczony, system wylicza karę (stawka dzienna * liczba dni) i dodaje odpowiedni wpis do tabeli `payments`.
 
 ### C. Procedura wypożyczenia (Funkcja)
 Funkcja `create_loan(client_id, copy_id, days)` upraszcza proces dodawania rekordu. Automatycznie wylicza datę zwrotu na podstawie długości wypożyczenia i obsługuje logikę kaucji (dodaje wpis płatności, jeśli gra tego wymaga).
+
+### D. Automatyczna aktualizacja statusu egzemplarza (Triggery)
+Triggery `trg_set_copy_status_on_loan_insert` oraz `trg_set_copy_status_on_return` automatycznie aktualizują pole statusu w tabeli `copies` przy wypożyczeniu i przy zwrocie, dzięki czemu raporty dostępności pokazują stan „w czasie rzeczywistym”.
 
 ---
 
@@ -93,7 +97,7 @@ Funkcja `create_loan(client_id, copy_id, days)` upraszcza proces dodawania rekor
 Poniższe testy potwierdzają poprawność zaimplementowanej logiki oraz spełnienie wymagań projektowych.
 
 ### Scenariusz 1: Próba wypożyczenia zajętego egzemplarza
-**Cel:** Weryfikacja działania triggera `prevent_duplicate_loan`.
+**Cel:** Weryfikacja działania `triggera trg_prevent_duplicate_loan` (funkcja: `prevent_duplicate_loan()`).
 **Działanie:** Próba wypożyczenia egzemplarza, który posiada status aktywnego wypożyczenia (nie został zwrócony).
 **Kod SQL:**
 
@@ -110,7 +114,7 @@ ROLLBACK;
 ---
 
 ### Scenariusz 2: Zwrot po terminie i automatyczne naliczenie kary
-**Cel:** Weryfikacja triggera `apply_overdue_fine`.
+**Cel:** Weryfikacja działania triggera `trg_apply_overdue_fine` (funkcja: `apply_overdue_fine()`).
 **Działanie:** Symulacja zwrotu gry 5 dni po terminie.
 **Kod SQL:**
 
@@ -219,8 +223,10 @@ ORDER BY g.title;
 - `create_loan(client_id, copy_id, days)` – tworzy wypożyczenie, wylicza `due_date`, oraz (jeśli wymagane) rejestruje kaucję w `payments`.
 
 ### Triggery
-- `prevent_duplicate_loan` – blokuje wypożyczenie kopii, która ma już aktywne wypożyczenie (brak `return_date`).
-- `apply_overdue_fine` – przy zwrocie po terminie dodaje karę do tabeli `payments`.
+- `trg_prevent_duplicate_loan` (funkcja: `prevent_duplicate_loan()`) – blokuje podwójne wypożyczenie tej samej kopii - która ma już aktywne wypożyczenie (brak `return_date`).
+- `trg_apply_overdue_fine` (funkcja: `apply_overdue_fine()`) – przy zwrocie po terminie nalicza karę i dodaje wpis do `payments`.
+- `trg_set_copy_status_on_loan_insert` (funkcja: `set_copy_status_on_loan_insert()`) – ustawia status kopii po wypożyczeniu.
+- `trg_set_copy_status_on_return` (funkcja: `set_copy_status_on_return()`) – ustawia status kopii przy zwrocie.
 
 ---
 
