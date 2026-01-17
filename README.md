@@ -270,3 +270,4 @@ W projekcie znajdują się dane przykładowe umożliwiające natychmiastowe test
 - `payments`: 11  
 - `game_categories`: 28  
 
+---
