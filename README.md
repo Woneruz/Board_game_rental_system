@@ -1,6 +1,7 @@
 # System Bazy Danych Wypożyczalni Gier Planszowych 🎲
 
 **Projekt:** Relacyjna baza danych (PostgreSQL) dla wypożyczalni gier planszowych 
+
 **Autorzy:** Arkadiusz Baran, Maciej Miłek
 
 ---
