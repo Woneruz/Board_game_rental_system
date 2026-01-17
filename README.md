@@ -37,7 +37,7 @@ Jeśli import na innym koncie PostgreSQL zgłasza błąd braku roli/owner’a, u
 
 ```sql
 SELECT COUNT(*) FROM games;
-SELECT * FROM vw_game_availability ORDER BY title;
+SELECT * FROM vw_game_availability ORDER BY game_title;
 ```
 
 ---
