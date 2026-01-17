@@ -216,7 +216,7 @@ ORDER BY g.title;
 ## 5. Obiekty bazy danych
 
 ### Widoki
-- `vw_game_availability` – raport dostępności gier (tytuł, wydawca, liczba kopii, liczba dostępnych kopii).
+- `vw_game_availability` – raport dostępności gier (tytuł, liczba kopii, liczba dostępnych kopii).
 - `vw_overdue_loans` – lista wypożyczeń po terminie (przydatne do obsługi opóźnień).
 
 ### Funkcje
