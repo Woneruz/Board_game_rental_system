@@ -13,10 +13,23 @@
 
 ### Import bazy danych
 
+> Ten wariant jest najbardziej przenośny (nie zakłada konkretnych ról/ownerów z serwera).
+
+```bash
+createdb board_game_rental_system
+psql -d board_game_rental_system -v ON_ERROR_STOP=1 -f migrations/001_schema.sql
+psql -d board_game_rental_system -v ON_ERROR_STOP=1 -f migrations/002_seed.sql
+```
+
+> Import bazy danych (alternatywnie: pełny dump database.sql)
+
 ```bash
 createdb board_game_rental_system
 psql -d board_game_rental_system -f database.sql
 ```
+*Uwaga: database.sql może zawierać polecenia typu ALTER ... OWNER TO ... (dump z serwera).
+Jeśli import na innym koncie PostgreSQL zgłasza błąd braku roli/owner’a, użyj wariantu z migrations/.*
+
 
 ### Szybkie sprawdzenie działania
 
@@ -233,3 +246,20 @@ ORDER BY g.title;
 ## 8. Testowanie
 
 W folderze `assets/` znajdują się zrzuty ekranu potwierdzające scenariusze testowe (blokada wypożyczenia zajętej kopii, naliczanie kary, raporty dostępności oraz kategorie M:N).
+
+---
+
+## 9. Dane testowe (seed)
+
+W projekcie znajdują się dane przykładowe umożliwiające natychmiastowe testy logiki:
+
+- `games`: 12  
+- `copies`: 16  
+- `clients`: 10  
+- `employees`: 12  
+- `publishers`: 10  
+- `categories`: 10  
+- `loans`: 11  
+- `payments`: 11  
+- `game_categories`: 28  
+
